@@ -1,9 +1,11 @@
+target "GLSL-410"
+
 builtin func sin(float) -> float
 builtin vec3 gl_Position
 
 uniform float time
 
 func main(vec3 pos) {
-    offset = vec3(0, sin(time * 2) + 0.5, 0)
+    // offset = vec3(0, sin(time * 2) + 0.5, 0)
     gl_Position = pos + offset
 }

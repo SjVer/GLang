@@ -48,6 +48,11 @@ advance :: proc() -> Token {
 	if !is_at_end() {
 		p.prev_token = p.curr_token
 		p.curr_token = scan(&p.tokenizer)
+
+		// TODO: for now we just skip comments
+		for ; p.curr_token.kind == .Comment ; {
+			p.curr_token = scan(&p.tokenizer)
+		}
 	}
 
 	return p.prev_token

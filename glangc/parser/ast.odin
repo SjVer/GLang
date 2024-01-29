@@ -1,5 +1,7 @@
 package glangc_parser
 
+import "../common"
+
 Span :: struct {
 	start, end: Pos,
 }
@@ -10,11 +12,27 @@ InSpan :: struct($T: typeid) {
 }
 
 Module :: struct {
+	target: common.Target,
 	decls: [dynamic]Decl,
 }
 
 Decl :: union {
-	Function
+	Function,
+	Global
+}
+
+Global_Kind :: enum {
+	Normal,
+	Uniform,
+	Builtin,
+}
+
+Global :: struct {
+	using span: Span `fmt:"-"`,
+	kind: Global_Kind,
+	type: Type,
+	name: InSpan(string),
+	value: Maybe(Expr),
 }
 
 Param :: struct {
@@ -51,7 +69,22 @@ Expr_Stmt :: struct {
 }
 
 Expr :: union {
+	Assign_Expr,
+	Binary_Expr,
 	Literal_Expr,
+}
+
+Assign_Expr :: struct {
+	using span: Span `fmt:"-"`,
+	dest: ^Expr,
+	expr: ^Expr,
+}
+
+Binary_Expr :: struct {
+	using span: Span `fmt:"-"`,
+	op: Token_Kind,
+	lhs: ^Expr,
+	rhs: ^Expr,
 }
 
 Literal_Expr :: struct {

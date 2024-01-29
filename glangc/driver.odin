@@ -5,12 +5,13 @@ import "core:log"
 import "core:os"
 import "shared:clodin"
 
+import "common"
 import "parser"
 import "report"
 
 input_file := ""
 verbose := false
-target := DEFAULT_TARGET
+target := common.Target.Default
 
 parse_cli :: proc() {
 	clodin.program_name = os.args[0]
@@ -19,21 +20,21 @@ parse_cli :: proc() {
 	clodin.program_information = fmt.aprintf(
 		"Written by Sjoerd Vermeulen.\n" + 
 		"Built for %s on %s%s.\n" + 
-		"See <TODO> for more information.",
+		"See https://github.com/SjVer/GLang for more information.",
 		ODIN_OS, ODIN_ARCH, " (debug)" when ODIN_DEBUG else "")
 
 	clodin.start_os_args()
 	
-	input_file = clodin.pos_string("FILE")
+	input_file = clodin.pos_string("FILE", "The input file")
 
 	verbose = clodin.flag("verbose", "Produce verbose output")
 	target = clodin.opt_arg(
-		parse_target,
-		DEFAULT_TARGET,
+		common.parse_target,
+		common.Target.Default,
 		"target",
 		fmt.aprintf(
-			"The compilation target (%s by default)",
-			TARGET_STRINGS[DEFAULT_TARGET],
+			"The compilation target\n" +
+			"(derived from source by default)",
 		),
 	)
 
@@ -42,19 +43,30 @@ parse_cli :: proc() {
 }
 
 main :: proc() {
+	// context.logger = log.create_console_logger()
 	parse_cli()
 
 	context.logger = report.create_logger(verbose)
 	when ODIN_DEBUG do log.info("running debug build")
 
-	log.info("options:")
-	log.info("\tinput file:", input_file)
-	log.info("\tverbose:", verbose)
-	log.info("\ttarget:", target)
+	// log.info("options:")
+	// log.info("\tinput file:", input_file)
+	// log.info("\tverbose:", verbose)
+	// log.info("\ttarget:", target)
 
+	// parse input file
 	log.info("parsing", input_file)
 	mod := parser.parse_file(input_file)
 	log.info("parsed", input_file)
+
+	// override target if specified
+	if target != .Default do mod.target = target
+
+	// check target
+	if mod.target == .Default {
+		log.error("no target specified")
+		os.exit(1)
+	}
 	
 	for p in mod.decls {
 		log.debugf("\n%#v", p)

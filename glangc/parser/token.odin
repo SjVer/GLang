@@ -32,68 +32,75 @@ Token_Kind :: enum u32 {
 	Invalid,
 	EOF,
 	Comment,
+
 	B_Literal_Begin,
-	Ident, // main
-	Integer, // 12345
-	Float, // 123.45
-	Char, // 'a'
-	// String,  // "abc"
+		Ident, // main
+		Integer, // 12345
+		Float, // 123.45
+		Char, // 'a'
+		String, // "abc"
 	B_Literal_End,
+
 	B_Operator_Begin,
-	Eq, // =
-	Not, // !
-	Question, // ?
-	Add, // +
-	Sub, // -
-	Mul, // *
-	Quo, // /
-	Mod, // %
-	And, // &
-	Or, // |
-	Xor, // ~
-	Shl, // <<
-	Shr, // >>
-	Cmp_And, // &&
-	Cmp_Or, // ||
-	Arrow, // ->
-	B_Comparison_Begin,
-	Cmp_Eq, // ==
-	Not_Eq, // !=
-	Lt, // <
-	Gt, // >
-	Lt_Eq, // <=
-	Gt_Eq, // >=
-	B_Comparison_End,
-	Open_Paren, // (
-	Close_Paren, // )
-	Open_Bracket, // [
-	Close_Bracket, // ]
-	Open_Brace, // {
-	Close_Brace, // }
-	Colon, // :
-	Semicolon, // ;
-	Period, // .
-	Comma, // ,
+		Eq, // =
+		Not, // !
+		Question, // ?
+		Add, // +
+		Sub, // -
+		Mul, // *
+		Quo, // /
+		Mod, // %
+		And, // &
+		Or, // |
+		Xor, // ~
+		Shl, // <<
+		Shr, // >>
+		Cmp_And, // &&
+		Cmp_Or, // ||
+		Arrow, // ->
+
+		B_Comparison_Begin,
+			Cmp_Eq, // ==
+			Not_Eq, // !=
+			Lt, // <
+			Gt, // >
+			Lt_Eq, // <=
+			Gt_Eq, // >=
+		B_Comparison_End,
+		
+		Open_Paren, // (
+		Close_Paren, // )
+		Open_Bracket, // [
+		Close_Bracket, // ]
+		Open_Brace, // {
+		Close_Brace, // }
+		Colon, // :
+		Semicolon, // ;
+		Period, // .
+		Comma, // ,
 	B_Operator_End,
+
 	B_Keyword_Begin,
-	Import, // import
-	Uniform, // uniform
-	Builtin, // builtin
-	If, // if
-	Else, // else
-	For, // for
-	Break, // break
-	Continue, // continue
-	Return, // return
-	Func, // func
-	Struct, // struct
-	Union, // union
-	Enum, // enum
-	// Cast,        // cast
-	Asm, // asm
-	Inline, // inline
-	No_Inline, // no_inline
+		Target, // target
+		Import, // import
+		Uniform, // uniform
+		Builtin, // builtin
+		If, // if
+		Else, // else
+		For, // for
+		Break, // break
+		Continue, // continue
+		Return, // return
+		Func, // func
+		Struct, // struct
+		Union, // union
+		Enum, // enum
+		// Cast,        // cast
+		Asm, // asm
+		Inline, // inline
+		No_Inline, // no_inline
 	B_Keyword_End,
+	
 	COUNT,
 }
 
@@ -106,7 +113,7 @@ tokens := [Token_Kind.COUNT]string {
 	"integer",
 	"float",
 	"character",
-	// "string",
+	"string",
 	"",
 	"",
 	"=",
@@ -145,6 +152,7 @@ tokens := [Token_Kind.COUNT]string {
 	",",
 	"",
 	"",
+	"target",
 	"import",
 	"uniform",
 	"builtin",
@@ -172,9 +180,8 @@ is_newline :: proc(tok: Token) -> bool {
 }
 
 token_to_string :: proc(tok: Token) -> string {
-	if is_newline(tok) {
-		return "newline or ';'"
-	}
+	// if is_newline(tok) do return "newline or ';'"
+	if tok.text == "\n" do return "newline"
 	if tok.kind == .Ident {
 		return fmt.aprintf("identifier '%s'", tok.text)
 	}
@@ -183,8 +190,14 @@ token_to_string :: proc(tok: Token) -> string {
 
 to_string :: proc(kind: Token_Kind) -> string {
 	if kind == .Semicolon do return "newline or ';'"
-	if .Invalid <= kind && kind < .B_Literal_End do return tokens[kind]
-	if .Invalid <= kind && kind < .COUNT do return fmt.aprintf("'%s'", tokens[kind])
+	else if kind == .Invalid do return "invalid token"
+	else if kind == .Comment do return "comment"
+	else if kind == .EOF do return "end of file"
+	else if .Invalid <= kind && kind < .B_Literal_End {
+		return tokens[kind]
+	} else if .Invalid <= kind && kind < .COUNT {
+		return fmt.aprintf("'%s'", tokens[kind])
+	}
 
 	return "Invalid"
 }

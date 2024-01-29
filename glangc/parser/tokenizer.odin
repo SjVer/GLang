@@ -497,9 +497,9 @@ scan :: proc(t: ^Tokenizer) -> Token {
 		case '\'':
 			kind = .Char
 			lit = scan_rune(t)
-		// case '"':
-		// 	kind = .String
-		// 	lit = scan_string(t)
+		case '"':
+			kind = .String
+			lit = scan_string(t)
 		// case '`':
 		// 	kind = .String
 		// 	lit = scan_raw_string(t)
