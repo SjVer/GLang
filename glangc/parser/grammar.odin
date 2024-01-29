@@ -9,7 +9,10 @@ put_in_span :: proc(pos: Pos, item: $T) -> InSpan(T) {
 }
 
 consume_newlines :: proc() {
-    if !skip_newlines() && !is_at_end() do consume(.Semicolon)
+	if !skip_newlines() && !is_at_end() {
+		consume(.Semicolon)
+		for !match(.Semicolon) && !is_at_end() do advance()
+	}
 }
 
 parse_file :: proc(file_path: string) -> Module {
@@ -212,7 +215,7 @@ get_precedence :: proc(token_kind: Token_Kind) -> int {
 	return -1
 }
 is_right_assoc :: proc(token_kind: Token_Kind) -> bool {
-    return token_kind == .Eq || token_kind == .Question
+	return token_kind == .Eq || token_kind == .Question
 }
 
 parse_binary_expr :: proc(
@@ -229,22 +232,21 @@ parse_binary_expr :: proc(
 	for get_precedence(p.curr_token.kind) == prec {
 		op := advance()
 
-        next_prec := is_right_assoc(op.kind) ? prec : prec - 1
+		next_prec := is_right_assoc(op.kind) ? prec : prec - 1
 		rhs := parse_binary_expr(false, next_prec) or_return
 
-        if op.kind == .Eq {
-            expr := Assign_Expr{}
-            expr.dest = new_clone(lhs)
-            expr.expr = new_clone(rhs)
-            lhs = expr
-        }
-        else {
-            expr := Binary_Expr{}
-            expr.op = op.kind
-            expr.lhs = new_clone(lhs)
-            expr.rhs = new_clone(rhs)
-            lhs = expr
-        }
+		if op.kind == .Eq {
+			expr := Assign_Expr{}
+			expr.dest = new_clone(lhs)
+			expr.expr = new_clone(rhs)
+			lhs = expr
+		} else {
+			expr := Binary_Expr{}
+			expr.op = op.kind
+			expr.lhs = new_clone(lhs)
+			expr.rhs = new_clone(rhs)
+			lhs = expr
+		}
 	}
 
 	return lhs, nil
@@ -256,7 +258,16 @@ parse_unary_expr :: proc(or_stmt := false) -> (ret: Expr, err: Error) {
 
 parse_atom_expr :: proc(or_stmt := false) -> (ret: Expr, err: Error) {
 	#partial switch p.curr_token.kind {
-		case .Ident, .Integer, .Float:
+		case .Ident:
+			advance()
+			if check(.Open_Paren) do return parse_call()
+			// else
+			return Literal_Expr {
+					pos = p.prev_token.pos,
+					kind = p.prev_token.kind,
+				},
+				nil
+		case .Integer, .Float:
 			advance()
 			return Literal_Expr {
 					pos = p.prev_token.pos,
@@ -271,6 +282,24 @@ parse_atom_expr :: proc(or_stmt := false) -> (ret: Expr, err: Error) {
 		token_to_string(p.curr_token),
 	)
 	return nil, .Error
+}
+
+parse_call :: proc() -> (ret: Call_Expr, err: Error) {
+    ret.callee = put_in_span(p.prev_token.pos, p.prev_token.text)
+    ret.start = p.prev_token.pos
+    assert(advance().kind == .Open_Paren) // '('
+    
+    for !is_at_end() {
+        arg := parse_expr() or_return
+        append(&ret.args, arg)
+
+        if check(.Close_Paren) do break
+        else do consume(.Comma)
+    }
+    consume(.Close_Paren)
+
+    ret.end = p.prev_token.pos
+    return ret, nil
 }
 
 parse_type :: proc() -> (ret: Type, err: Error) {

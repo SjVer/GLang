@@ -71,6 +71,7 @@ Expr_Stmt :: struct {
 Expr :: union {
 	Assign_Expr,
 	Binary_Expr,
+	Call_Expr,
 	Literal_Expr,
 }
 
@@ -85,6 +86,12 @@ Binary_Expr :: struct {
 	op: Token_Kind,
 	lhs: ^Expr,
 	rhs: ^Expr,
+}
+
+Call_Expr :: struct {
+	using span: Span `fmt:"-"`,
+	callee: InSpan(string),
+	args: [dynamic]Expr,
 }
 
 Literal_Expr :: struct {
