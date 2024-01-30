@@ -19,14 +19,20 @@ EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 
 SOURCES := $(shell find $(SRCDIR) -name "*.odin")
+PROFILE := $(if $(release),release,debug)
 
 # ==================== targets ====================
 
 $(EXE): $(BINDIR)/$(EXE)
 
+ifneq "$(shell cat $(BINDIR)/profile)" "$(PROFILE)"
+.PHONY: $(BINDIR)/$(EXE)
+endif
+
 $(BINDIR)/$(EXE): $(SOURCES) | makedirs
 	@printf "$(Y)[$(EXE)]$(N) "
 	odin build $(SRCDIR) -out:$@ $(if $(release),,-debug)
+	@echo $(PROFILE) > $(BINDIR)/profile
 
 # ===================== tools =====================
 
