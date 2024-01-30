@@ -1,6 +1,6 @@
-TARGETS = glangc
+EXE = glangc
 
-SRCDIR = src
+SRCDIR = glangc
 BINDIR = bin
 
 RM = rm
@@ -18,21 +18,15 @@ COMMA := ,
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 
+SOURCES := $(shell find $(SRCDIR) -name "*.odin")
+
 # ==================== targets ====================
 
-define make-target
+$(EXE): $(BINDIR)/$(EXE)
 
-.PHONY: $1
-$1: $(BINDIR)/$1
-
-.PHONY: $(BINDIR)/$1
-$(BINDIR)/$1: makedirs
-	@printf "$(Y)[$1]$(N) "
-	odin build $1 -out:$$@ $(if $(release),,-debug)
-
-endef
-
-$(foreach p,$(TARGETS),$(eval $(call make-target,$(p))))
+$(BINDIR)/$(EXE): $(SOURCES) | makedirs
+	@printf "$(Y)[$(EXE)]$(N) "
+	odin build $(SRCDIR) -out:$@ $(if $(release),,-debug)
 
 # ===================== tools =====================
 
