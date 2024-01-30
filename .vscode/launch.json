@@ -32,7 +32,45 @@
             ],
 
             "preLaunchTask": "build"
-        }
+        },
+        {
+            "name": "(gdb) Launch (release)",
+            "type": "cppdbg",
+            "request": "launch",
 
+            "program": "${workspaceFolder}/bin/glangc",
+            "args": ["-verbose", "test/test.gl"],
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            
+            "externalConsole": false,
+
+            "stopAtEntry": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+
+            "preLaunchTask": "build release"
+        },
+        // {
+        //     "name": "Launch (release)",
+        //     "type": "node-terminal",
+        //     "request": "launch",
+
+        //     "command": "bin/glangc -verbose test/test.gl",
+        //     "cwd": "${workspaceFolder}",
+
+        //     "preLaunchTask": "build release"
+        // }
     ]
 }

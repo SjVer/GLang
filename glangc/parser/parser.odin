@@ -30,9 +30,8 @@ init_parser :: proc(file_path: string) {
 	advance()
 }
 
-error_at_pos :: report.error_at_pos
 error_at_curr :: proc(fmt_str: string, args: ..any) {
-	error_at_pos(p.curr_token.pos, fmt_str, ..args)
+	dispatch_error_at_tok(p.curr_token, fmt_str, ..args)
 }
 
 is_at_end :: proc() -> bool {

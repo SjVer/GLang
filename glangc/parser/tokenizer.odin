@@ -51,7 +51,7 @@ offset_to_pos :: proc(t: ^Tokenizer, offset: int) -> Pos {
 
 error :: proc(t: ^Tokenizer, offset: int, msg: string, args: ..any) {
 	pos := offset_to_pos(t, offset)
-	report.error_at_pos(pos, msg, ..args)
+	report.dispatch_error_at_span(Span{pos, pos}, msg, ..args)
 }
 
 advance_rune :: proc(t: ^Tokenizer) {

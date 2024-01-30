@@ -173,8 +173,6 @@ tokens := [Token_Kind.COUNT]string {
 	"",
 }
 
-custom_keyword_tokens: []string
-
 is_newline :: proc(tok: Token) -> bool {
 	return tok.kind == .Semicolon && tok.text == "\n"
 }

@@ -25,13 +25,13 @@ do_level_header :: proc(
 	col := RESET
 	switch level {
 		case .Debug:
-			col = DARK_GREY
+			col = BOLD_GREY
 		case .Info:
-			col = CYAN
+			col = BOLD_CYAN
 		case .Warning:
-			col = YELLOW
+			col = BOLD_YELLOW
 		case .Error, .Fatal:
-			col = RED
+			col = BOLD_RED
 	}
 
 	if .Level in opts {
@@ -61,7 +61,7 @@ logger_proc :: proc(
 	buf := strings.builder_from_bytes(backing[:])
 
 	when ODIN_DEBUG {
-		fmt.sbprint(&buf, DARK_GREY)
+		fmt.sbprint(&buf, BOLD_GREY)
 		log.do_location_header(options, &buf, location)
 		fmt.sbprint(&buf, RESET)
 		fmt.sbprint(&buf, strings.repeat(" ", max(0, 50 - strings.builder_len(buf))))

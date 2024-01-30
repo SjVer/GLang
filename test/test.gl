@@ -5,6 +5,7 @@ builtin type vec3
 
 builtin func sin(float) -> float
 builtin vec3 gl_Position
+builtin vec3 gl_Position
 
 uniform float time
 

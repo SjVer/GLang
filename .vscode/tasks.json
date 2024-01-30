@@ -14,6 +14,30 @@
             "options": {
                 "cwd": "${workspaceFolder}"
             },
+            "echoCommand": true,
+
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true,
+            },
+        },
+        {
+            "label": "build release",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+
+            "command": "make",
+            "args": ["release=1"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "echoCommand": true,
 
             "presentation": {
                 "echo": true,

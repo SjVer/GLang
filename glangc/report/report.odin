@@ -2,12 +2,6 @@ package glangc_report
 
 import "core:fmt"
 
-RESET :: "\x1b[0m"
-CYAN :: "\x1b[1;36m"
-RED :: "\x1b[1;31m"
-YELLOW :: "\x1b[1;33m"
-DARK_GREY :: "\x1b[1;90m"
-
 Pos :: struct {
 	file:   string,
 	offset: int, // starting at 0
@@ -19,28 +13,63 @@ Span :: struct {
 	start, end: Pos,
 }
 
-error_at_pos :: proc(pos: Pos, msg: string, args: ..any) {
-	fmt.eprint(RED + "error" + RESET + ": ")
-	fmt.eprintf(msg, ..args)
-	fmt.eprintln()
-	fmt.eprintf(" -> " + CYAN + "%s:%d:%d" + RESET, pos.file, pos.line, pos.column)
-	fmt.eprintln()
+span_of_pos :: proc(pos: Pos, length := 0) -> Span {
+	end := pos
+	end.column += length
+	end.offset += length
+	return Span{pos, end}
 }
 
-error_at_span :: proc(span: Span, msg: string, args: ..any) {
-	// TODO: improve
-	error_at_pos(span.start, msg, ..args)
+Report_Type :: enum {
+	Note,
+	Warning,
+	Error,
+	COUNT
 }
 
-note_at_pos :: proc(pos: Pos, msg: string, args: ..any) {
-	fmt.eprint(CYAN + "note" + RESET + ": ")
-	fmt.eprintf(msg, ..args)
-	fmt.eprintln()
-	fmt.eprintf(" -> " + CYAN + "%s:%d:%d" + RESET, pos.file, pos.line, pos.column)
-	fmt.eprintln()
+Report :: struct {
+	type:    Report_Type,
+	message: string,
+	span:    Maybe(Span),
+	related: [dynamic]Report,
 }
 
-note_at_span :: proc(span: Span, msg: string, args: ..any) {
-	// TODO: improve
-	note_at_pos(span.start, msg, ..args)
+make :: proc(type: Report_Type, span: Maybe(Span), msg: string, args: ..any) -> Report {
+	return Report{
+		type = type,
+		message = fmt.aprintf(msg, ..args),
+		span = span,
+		related = {}
+	}
+}
+note :: proc(span: Maybe(Span), msg: string, args: ..any) -> Report {
+	return make(.Note, span, msg, ..args)
+}
+warning :: proc(span: Maybe(Span), msg: string, args: ..any) -> Report {
+	return make(.Warning, span, msg, ..args)
+}
+error :: proc(span: Maybe(Span), msg: string, args: ..any) -> Report {
+	return make(.Error, span, msg, ..args)
+}
+
+add_note :: proc(report: ^Report, span: Maybe(Span), msg: string, args: ..any) {
+	append(&report.related, note(span, msg, ..args))
+}
+
+dispatch_error_at_span :: proc(span: Span, msg: string, args: ..any) {
+	dispatch(Report{
+		type = .Error,
+		message = fmt.aprintf(msg, ..args),
+		span = span,
+		related = {}
+	})
+}
+
+dispatch_simple_note :: proc(msg: string, args: ..any) {
+	dispatch(Report{
+		type = .Note,
+		message = fmt.aprintf(msg, ..args),
+		span = nil,
+		related = {}
+	})
 }

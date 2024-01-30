@@ -1,7 +1,7 @@
 package glangc_sema
 
 import p "../parser"
-import "../report"
+import r "../report"
 import "core:strconv"
 
 // ============== toplevel ==============
@@ -26,11 +26,9 @@ analyze :: proc(ast: p.AST) -> Module {
 		}
 
 		if name in scope.symbols {
-			report.error_at_span(span, "redeclaration of global '%s'", name)
-			report.note_at_span(
-				scope.symbols[name],
-				"previously declared here",
-			)
+			rep := r.error(span, "redeclaration of global '%s'", name)
+			r.add_note(&rep, scope.symbols[name], "previously declared here")
+			r.dispatch(rep)
 		} else do scope.symbols[name] = span
 	}
     
@@ -60,8 +58,9 @@ a_builtin_type :: proc(type: p.Builtin_Type) -> (ret: Decl, ok: bool) {
 	name := type.name.text
 
 	if name in types {
-		report.error_at_span(type.span, "redeclaration of type '%s'", name)
-		report.note_at_span(types[name], "previously declared here")
+		rep := r.error(type.span, "redeclaration of type '%s'", name)
+		r.add_note(&rep, types[name], "previously declared here")
+		r.dispatch(rep)
 	} else {
 		types[name] = type.span
 	}
