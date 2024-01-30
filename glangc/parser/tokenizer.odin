@@ -14,16 +14,13 @@ Tokenizer :: struct {
 	path: string,
 	src:  string,
 
-	// Tokenizing state
+	// Tokenizing scope
 	ch:          rune,
 	offset:      int,
 	read_offset: int,
 	line_offset: int,
 	line_count:  int,
 	insert_semicolon: bool,
-
-	// Mutable data
-	error_count: int,
 }
 
 init_tokenizer :: proc(t: ^Tokenizer, src: string, path: string) {
@@ -33,7 +30,6 @@ init_tokenizer :: proc(t: ^Tokenizer, src: string, path: string) {
 	t.read_offset = 0
 	t.line_offset = 0
 	t.line_count = len(src) > 0 ? 1 : 0
-	t.error_count = 0
 	t.path = path
 
 	advance_rune(t)
@@ -56,7 +52,6 @@ offset_to_pos :: proc(t: ^Tokenizer, offset: int) -> Pos {
 error :: proc(t: ^Tokenizer, offset: int, msg: string, args: ..any) {
 	pos := offset_to_pos(t, offset)
 	report.error_at_pos(pos, msg, ..args)
-	t.error_count += 1
 }
 
 advance_rune :: proc(t: ^Tokenizer) {
@@ -264,12 +259,6 @@ scan_escape :: proc(t: ^Tokenizer) -> bool {
 	case 'x':
 		advance_rune(t)
 		n, base, max = 2, 16, 255
-	case 'u':
-		advance_rune(t)
-		n, base, max = 4, 16, utf8.MAX_RUNE
-	case 'U':
-		advance_rune(t)
-		n, base, max = 8, 16, utf8.MAX_RUNE
 	case:
 		if t.ch < 0 {
 			error(t, offset, "escape sequence was not terminated")
@@ -303,7 +292,7 @@ scan_escape :: proc(t: ^Tokenizer) -> bool {
 	return true
 }
 
-scan_rune :: proc(t: ^Tokenizer) -> string {
+scan_char :: proc(t: ^Tokenizer) -> string {
 	offset := t.offset-1
 	valid := true
 	n := 0
@@ -311,7 +300,7 @@ scan_rune :: proc(t: ^Tokenizer) -> string {
 		ch := t.ch
 		if ch == '\n' || ch < 0 {
 			if valid {
-				error(t, offset, "rune literal not terminated")
+				error(t, offset, "character literal not terminated")
 				valid = false
 			}
 			break
@@ -329,7 +318,7 @@ scan_rune :: proc(t: ^Tokenizer) -> string {
 	}
 
 	if valid && n != 1 {
-		error(t, offset, "illegal rune literal")
+		error(t, offset, "illegal character literal")
 	}
 
 	return string(t.src[offset : t.offset])
@@ -496,7 +485,7 @@ scan :: proc(t: ^Tokenizer) -> Token {
 
 		case '\'':
 			kind = .Char
-			lit = scan_rune(t)
+			lit = scan_char(t)
 		case '"':
 			kind = .String
 			lit = scan_string(t)
@@ -519,8 +508,6 @@ scan :: proc(t: ^Tokenizer) -> Token {
 		case ']': kind = .Close_Bracket
 		case '{': kind = .Open_Brace
 		case '}': kind = .Close_Brace
-		case '%':
-			kind = .Mod
 		case '*':
 			kind = .Mul
 		case '=':
@@ -546,7 +533,7 @@ scan :: proc(t: ^Tokenizer) -> Token {
 				kind = .Arrow
 			}
 		case '/':
-			kind = .Quo
+			kind = .Div
 			switch t.ch {
 			case '/', '*':
 				kind = .Comment

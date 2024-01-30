@@ -48,8 +48,7 @@ Token_Kind :: enum u32 {
 		Add, // +
 		Sub, // -
 		Mul, // *
-		Quo, // /
-		Mod, // %
+		Div, // /
 		And, // &
 		Or, // |
 		Xor, // ~
@@ -85,6 +84,7 @@ Token_Kind :: enum u32 {
 		Import, // import
 		Uniform, // uniform
 		Builtin, // builtin
+		Type, // type
 		If, // if
 		Else, // else
 		For, // for
@@ -123,7 +123,6 @@ tokens := [Token_Kind.COUNT]string {
 	"-",
 	"*",
 	"/",
-	"%",
 	"&",
 	"|",
 	"~",
@@ -156,6 +155,7 @@ tokens := [Token_Kind.COUNT]string {
 	"import",
 	"uniform",
 	"builtin",
+	"type",
 	"if",
 	"else",
 	"for",

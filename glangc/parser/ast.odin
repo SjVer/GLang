@@ -1,25 +1,32 @@
 package glangc_parser
 
 import "../common"
+import "../report"
 
-Span :: struct {
-	start, end: Pos,
-}
+Span :: report.Span
 
 InSpan :: struct($T: typeid) {
 	using span: Span `fmt:"-"`,
 	item:       T,
 }
 
-Module :: struct {
+AST :: struct {
 	target: common.Target,
-	decls: [dynamic]Decl,
+	decls:  [dynamic]Decl,
 }
 
 Decl :: union {
+	Builtin_Type,
 	Function,
-	Global
+	Global,
 }
+
+SymbolDecl :: struct {
+	using span: Span `fmt:"-"`,
+	name:       Identifier,
+}
+
+Builtin_Type :: distinct SymbolDecl
 
 Global_Kind :: enum {
 	Normal,
@@ -29,24 +36,27 @@ Global_Kind :: enum {
 
 Global :: struct {
 	using span: Span `fmt:"-"`,
-	kind: Global_Kind,
-	type: Type,
-	name: InSpan(string),
-	value: Maybe(Expr),
+	symbol:     SymbolDecl,
+	kind:       Global_Kind,
+	type:       Type,
+	value:      Maybe(Expr),
 }
 
 Param :: struct {
-	type: Type,
-	name: Maybe(InSpan(string))
+	using span: Span,
+	type:       Type,
+	name:       Maybe(Identifier),
 }
 
 Function :: struct {
 	using span: Span `fmt:"-"`,
-	name:       InSpan(string),
-	params:		[dynamic]Param,
-	returns:	Maybe(Type),
+	symbol:     SymbolDecl,
+	params:     [dynamic]Param,
+	returns:    Maybe(Type),
 	block:      Maybe(Block_Stmt), // nil ? builtin
 }
+
+// ============== statements ==============
 
 Stmt :: union {
 	Block_Stmt,
@@ -68,35 +78,46 @@ Expr_Stmt :: struct {
 	expr: Expr,
 }
 
+// ============== expressions ==============
+
 Expr :: union {
 	Assign_Expr,
 	Binary_Expr,
 	Call_Expr,
 	Literal_Expr,
+	Identifier,
 }
 
 Assign_Expr :: struct {
 	using span: Span `fmt:"-"`,
-	dest: ^Expr,
-	expr: ^Expr,
+	dest:       ^Expr,
+	expr:       ^Expr,
 }
 
 Binary_Expr :: struct {
 	using span: Span `fmt:"-"`,
-	op: Token_Kind,
-	lhs: ^Expr,
-	rhs: ^Expr,
+	op:         Token_Kind,
+	lhs:        ^Expr,
+	rhs:        ^Expr,
 }
 
 Call_Expr :: struct {
 	using span: Span `fmt:"-"`,
-	callee: InSpan(string),
-	args: [dynamic]Expr,
+	callee:     Identifier,
+	args:       [dynamic]Expr,
 }
 
 Literal_Expr :: struct {
-	pos:  Pos `fmt:"-"`,
-	kind: Token_Kind,
+	using token: Token `fmt:"-"`,
 }
 
-Type :: InSpan(string)
+Identifier :: struct {
+	pos:  Pos `fmt:"-"`,
+	text: string,
+}
+
+// ============== types ==============
+
+Type :: union {
+	Identifier,
+}

@@ -6,8 +6,9 @@ import "core:os"
 import "shared:clodin"
 
 import "common"
-import "parser"
 import "report"
+import "parser"
+import "sema"
 
 input_file := ""
 verbose := false
@@ -56,20 +57,23 @@ main :: proc() {
 
 	// parse input file
 	log.info("parsing", input_file)
-	mod := parser.parse_file(input_file)
+	ast := parser.parse_file(input_file)
 	log.info("parsed", input_file)
-
-	// override target if specified
-	if target != .Default do mod.target = target
-
+	
 	// check target
-	if mod.target == .Default {
+	if target == .Default do target = ast.target
+	if target == .Default {
 		log.error("no target specified")
 		os.exit(1)
 	}
 	
-	for p in mod.decls {
-		log.debugf("\n%#v", p)
+	// do semantic analysis
+	log.info("analyzing", input_file)
+	mod := sema.analyze(ast)
+	log.info("analyzed", input_file)
+	
+	for s in mod {
+		log.debugf("\n%#v", s)
 	}
 
 	log.info("done")

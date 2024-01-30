@@ -11,11 +11,6 @@ Parser :: struct {
 	curr_token: Token,
 }
 
-Error :: enum {
-	NoError,
-	Error,
-}
-
 @(private)
 p: Parser
 
@@ -70,23 +65,23 @@ match :: proc(kind: Token_Kind) -> bool {
 	return false
 }
 
-consume :: proc(kind: Token_Kind) -> (Token, Error) {
+consume :: proc(kind: Token_Kind) -> (token: Token, ok: bool) {
 	if !check(kind) {
 		e := to_string(kind)
 		g := token_to_string(p.curr_token)
 		error_at_curr("expected %s, got %s", e, g)
-		return {}, .Error
+		return {}, false
 	}
-	return advance(), nil
+	return advance(), true
 }
 
-consume_semicolon :: proc() -> (ret: Token, err: Error) {
+consume_semicolon :: proc() -> (ret: Token, ok: bool) {
 	if !match(.Semicolon) {
 		g := token_to_string(p.curr_token)
 		error_at_curr("expected newline or ';', got %s", g)
-		return {}, .Error
+		return {}, false
 	}
-	return p.prev_token, nil
+	return p.prev_token, true
 }
 
 // returns true if at least one newline was skipped

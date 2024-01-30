@@ -4,8 +4,19 @@ import "../common"
 import "core:log"
 import "core:strings"
 
-put_in_span :: proc(pos: Pos, item: $T) -> InSpan(T) {
-	return InSpan(T){start = pos, end = pos, item = item}
+span_to_prev_from :: proc(start: Pos) -> Span {
+	end_pos := p.prev_token.pos
+	end_pos.offset += len(p.prev_token.text)
+	end_pos.column += len(p.prev_token.text)
+	return Span{start, end_pos}
+}
+
+put_in_span :: proc(span: Span, item: $T) -> InSpan(T) {
+	return InSpan(T){span, item}
+}
+
+prev_identifier :: proc() -> Identifier {
+	return Identifier{p.prev_token.pos, p.prev_token.text}
 }
 
 consume_newlines :: proc() {
@@ -15,9 +26,11 @@ consume_newlines :: proc() {
 	}
 }
 
-parse_file :: proc(file_path: string) -> Module {
+// ============== toplevel ==============
+
+parse_file :: proc(file_path: string) -> AST {
 	init_parser(file_path)
-	mod := Module{}
+	mod := AST{}
 	mod.target = .Default
 
 	skip_newlines()
@@ -40,8 +53,8 @@ parse_file :: proc(file_path: string) -> Module {
 
 	// parse declarations
 	for !is_at_end() {
-		decl, err := parse_decl()
-		if err != nil do return mod
+		decl, ok := parse_decl()
+		if !ok do return mod
 
 		append(&mod.decls, decl)
 
@@ -51,7 +64,7 @@ parse_file :: proc(file_path: string) -> Module {
 	return mod
 }
 
-parse_decl :: proc() -> (ret: Decl, err: Error) {
+parse_decl :: proc() -> (ret: Decl, ok: bool) {
 	if match(.Builtin) do return parse_builtin()
 	else if match(.Func) do return parse_func()
 	else if match(.Uniform) do return parse_global(.Uniform)
@@ -61,30 +74,40 @@ parse_decl :: proc() -> (ret: Decl, err: Error) {
 		"expected a declaration, got %s",
 		token_to_string(p.curr_token),
 	)
-	return nil, .Error
+	return nil, false
 }
 
-parse_builtin :: proc() -> (ret: Decl, err: Error) {
+parse_builtin :: proc() -> (ret: Decl, ok: bool) {
 	start := p.prev_token.pos
 
-	if match(.Func) {
+	if match(.Type) {
+		// builtin type
+		consume(.Ident) or_return
+		ident := prev_identifier()
+		symbol := SymbolDecl{span_to_prev_from(start), ident}
+		return cast(Builtin_Type)symbol, true
+	} else if match(.Func) {
+		// builtin function
 		sig := parse_func_sig(true) or_return
-		sig.start = start
 		sig.block = nil
-		sig.end = p.prev_token.pos
+		sig.span = span_to_prev_from(start)
 
-		return sig, nil
-	} else do return parse_global(.Builtin)
+		return sig, true
+	} else {
+		// builtin global
+		return parse_global(.Builtin)
+	}
 
 	error_at_curr(
-		"expected a signature, got %s",
+		"expected 'type' or a signature, got %s",
 		token_to_string(p.curr_token),
 	)
-	return nil, .Error
+	return nil, false
 }
 
-parse_global :: proc(kind: Global_Kind) -> (ret: Global, err: Error) {
-	ret.start = kind != .Normal ? p.prev_token.pos : p.curr_token.pos
+parse_global :: proc(kind: Global_Kind) -> (ret: Global, ok: bool) {
+	start := kind != .Normal ? p.prev_token.pos : p.curr_token.pos
+	ret.start = start
 	ret.kind = kind
 
 	// type
@@ -92,35 +115,38 @@ parse_global :: proc(kind: Global_Kind) -> (ret: Global, err: Error) {
 
 	// name
 	consume(.Ident) or_return
-	ret.name = put_in_span(p.prev_token.pos, p.prev_token.text)
+	ret.symbol.name = prev_identifier()
+	ret.symbol.span = span_to_prev_from(start)
 
 	// value
 	if kind != .Normal do ret.value = nil
 	else do ret.value = parse_expr() or_return
 
-	return ret, nil
+	return ret, true
 }
 
-parse_func_sig :: proc(builtin := false) -> (ret: Function, err: Error) {
+parse_func_sig :: proc(builtin := false) -> (ret: Function, ok: bool) {
 	// name
 	consume(.Ident) or_return
-	ret.name = put_in_span(p.prev_token.pos, p.prev_token.text)
+	ret.symbol.name = prev_identifier()
 
 	// params
 	consume(.Open_Paren) or_return
 
 	for !check(.Close_Paren) {
+		start := p.curr_token.pos
 		type := parse_type() or_return
 
-		name: Maybe(InSpan(string)) = nil
+		name: Maybe(Identifier) = nil
 		if builtin && match(.Ident) {
-			name = put_in_span(p.prev_token.pos, p.prev_token.text)
+			name = prev_identifier()
 		} else if !builtin {
 			consume(.Ident) or_return
-			name = put_in_span(p.prev_token.pos, p.prev_token.text)
+			name = prev_identifier()
 		}
 
-		append(&ret.params, Param{type, name})
+		span := span_to_prev_from(start)
+		append(&ret.params, Param{span, type, name})
 	}
 	consume(.Close_Paren) or_return
 
@@ -128,21 +154,22 @@ parse_func_sig :: proc(builtin := false) -> (ret: Function, err: Error) {
 	ret.returns = nil
 	if match(.Arrow) do ret.returns = parse_type() or_return
 
-	return ret, nil
+	return ret, true
 }
 
-parse_func :: proc() -> (ret: Function, err: Error) {
+parse_func :: proc() -> (ret: Function, ok: bool) {
 	start := p.prev_token.pos
 
 	function := parse_func_sig() or_return
-	function.start = start
 	function.block = parse_block_stmt() or_return
-	function.end = p.prev_token.pos
+	function.span = span_to_prev_from(start)
 
-	return function, nil
+	return function, true
 }
 
-parse_stmt :: proc(in_block := false) -> (ret: Stmt, err: Error) {
+// ============== statements ==============
+
+parse_stmt :: proc(in_block := false) -> (ret: Stmt, ok: bool) {
 	#partial switch p.curr_token.kind {
 		case .Open_Brace:
 			return parse_block_stmt()
@@ -155,42 +182,45 @@ parse_stmt :: proc(in_block := false) -> (ret: Stmt, err: Error) {
 	//     error_at_curr("expected a statement or '}', got %s", g)
 	// }
 	// else do error_at_curr("expected a statement, got %s", g)
-	// return nil, .Error
+	// return nil, false
 
 	expr := parse_expr(true) or_return
-	return Expr_Stmt{expr = expr}, nil
+	return Expr_Stmt{expr = expr}, true
 }
 
-parse_block_stmt :: proc() -> (ret: Block_Stmt, err: Error) {
+parse_block_stmt :: proc() -> (ret: Block_Stmt, ok: bool) {
 	start := (consume(.Open_Brace) or_return).pos
 
 	skip_newlines()
 
-	statements := [dynamic]Stmt{}
 	for !check(.Close_Brace) && !is_at_end() {
 		stmt := parse_stmt(true) or_return
-		append(&statements, stmt)
+		append(&ret.statements, stmt)
 
 		consume_newlines()
 	}
 
-	end := (consume(.Close_Brace) or_return).pos
-	return Block_Stmt{start = start, end = end, statements = statements}, nil
+	consume(.Close_Brace) or_return
+	ret.span = span_to_prev_from(start)
+	return ret, true
 }
 
-parse_return_stmt :: proc() -> (ret: Return_Stmt, err: Error) {
+parse_return_stmt :: proc() -> (ret: Return_Stmt, ok: bool) {
 	start := advance().pos
 
-	expr: Maybe(Expr) = nil
+	ret.expr = nil
 	if !check(.Semicolon) {
-		expr = parse_expr() or_return
+		ret.expr = parse_expr() or_return
 	}
+	ret.span = span_to_prev_from(start)
 
 	consume_semicolon() or_return
-	return Return_Stmt{start = start, end = p.prev_token.pos, expr = expr}, nil
+	return ret, true
 }
 
-parse_expr :: proc(or_stmt := false) -> (ret: Expr, err: Error) {
+// ============== expressions ==============
+
+parse_expr :: proc(or_stmt := false) -> (ret: Expr, ok: bool) {
 	return parse_binary_expr(or_stmt)
 }
 
@@ -199,8 +229,8 @@ get_precedence :: proc(token_kind: Token_Kind) -> int {
 	#partial switch token_kind {
 		case .Eq:
 			return 7
-		case .Question:
-			return 6
+		// case .Question:
+		// 	return 6
 		case .Cmp_Or:
 			return 5
 		case .Cmp_And:
@@ -209,7 +239,7 @@ get_precedence :: proc(token_kind: Token_Kind) -> int {
 			return 3
 		case .Add, .Sub, .Or, .Xor:
 			return 2
-		case .Mul, .Quo, .Mod, .And, .Shl, .Shr:
+		case .Mul, .Div, .And, .Shl, .Shr:
 			return 1
 	}
 	return -1
@@ -223,7 +253,7 @@ parse_binary_expr :: proc(
 	prec := MAX_PRECEDENCE,
 ) -> (
 	expr: Expr,
-	err: Error,
+	oik: bool,
 ) {
 	if prec <= 0 do return parse_unary_expr(or_stmt)
 
@@ -249,31 +279,23 @@ parse_binary_expr :: proc(
 		}
 	}
 
-	return lhs, nil
+	return lhs, true
 }
 
-parse_unary_expr :: proc(or_stmt := false) -> (ret: Expr, err: Error) {
+parse_unary_expr :: proc(or_stmt := false) -> (ret: Expr, ok: bool) {
 	return parse_atom_expr(or_stmt)
 }
 
-parse_atom_expr :: proc(or_stmt := false) -> (ret: Expr, err: Error) {
+parse_atom_expr :: proc(or_stmt := false) -> (ret: Expr, ok: bool) {
 	#partial switch p.curr_token.kind {
 		case .Ident:
 			advance()
 			if check(.Open_Paren) do return parse_call()
 			// else
-			return Literal_Expr {
-					pos = p.prev_token.pos,
-					kind = p.prev_token.kind,
-				},
-				nil
-		case .Integer, .Float:
+			return prev_identifier(), true
+		case .Char, .Integer, .Float:
 			advance()
-			return Literal_Expr {
-					pos = p.prev_token.pos,
-					kind = p.prev_token.kind,
-				},
-				nil
+			return Literal_Expr{p.prev_token}, true
 	}
 
 	error_at_curr(
@@ -281,29 +303,32 @@ parse_atom_expr :: proc(or_stmt := false) -> (ret: Expr, err: Error) {
 		or_stmt ? "a statement" : "an expression",
 		token_to_string(p.curr_token),
 	)
-	return nil, .Error
+	return nil, false
 }
 
-parse_call :: proc() -> (ret: Call_Expr, err: Error) {
-    ret.callee = put_in_span(p.prev_token.pos, p.prev_token.text)
-    ret.start = p.prev_token.pos
-    assert(advance().kind == .Open_Paren) // '('
-    
-    for !is_at_end() {
-        arg := parse_expr() or_return
-        append(&ret.args, arg)
+parse_call :: proc() -> (ret: Call_Expr, ok: bool) {
+	start := p.prev_token.pos
+	ret.callee = prev_identifier()
 
-        if check(.Close_Paren) do break
-        else do consume(.Comma)
-    }
-    consume(.Close_Paren)
+	assert(advance().kind == .Open_Paren) // '('
 
-    ret.end = p.prev_token.pos
-    return ret, nil
+	for !is_at_end() {
+		arg := parse_expr() or_return
+		append(&ret.args, arg)
+
+		if check(.Close_Paren) do break
+		else do consume(.Comma)
+	}
+	consume(.Close_Paren)
+
+	ret.span = span_to_prev_from(start)
+	return ret, true
 }
 
-parse_type :: proc() -> (ret: Type, err: Error) {
+// ============== types ==============
+
+parse_type :: proc() -> (ret: Type, ok: bool) {
 	consume(.Ident) or_return
-	type := put_in_span(p.prev_token.pos, p.prev_token.text)
-	return type, nil
+	type := prev_identifier()
+	return type, true
 }
