@@ -46,9 +46,8 @@ check_symbol_exists :: proc(name: string, pos: p.Pos) {
 		name,
 	)
 	if name in types {
-		report.add_note(&rep, types[name], "type '%s' defined here", name)
+		report.add_note(rep, types[name], "type '%s' defined here", name)
 	}
-	report.dispatch(rep)
 }
 
 check_type_exists :: proc(name: string, pos: p.Pos) {
@@ -72,9 +71,8 @@ check_type_exists :: proc(name: string, pos: p.Pos) {
 		}
 	}
 	if s, ok := symbol_span.?; ok {
-		report.add_note(&rep, s, "symbol '%s' defined here", name)
+		report.add_note(rep, s, "symbol '%s' defined here", name)
 	}
-	report.dispatch(rep)
 }
 
 add_local :: proc(name: string, span: p.Span) {
@@ -84,8 +82,7 @@ add_local :: proc(name: string, span: p.Span) {
 	if name in scope.symbols {
 		had_error = true
 		rep := report.error(span, "redefinition of local '%s'", name)
-		report.add_note(&rep, scope.symbols[name], "previously defined here")
-		report.dispatch(rep)
+		report.add_note(rep, scope.symbols[name], "previously defined here")
 	} else {
 		scope.symbols[name] = span
 	}

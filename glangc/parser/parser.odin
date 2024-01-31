@@ -21,8 +21,7 @@ init_parser :: proc(file_path: string) {
 	// read the file
 	data, success := os.read_entire_file_from_filename(file_path)
 	if !success {
-		log.fatalf("could not open file %s", file_path)
-		os.exit(1)
+		report.fatal("could not open file %s", file_path)
 	}
 	source := string(data)
 
@@ -31,7 +30,7 @@ init_parser :: proc(file_path: string) {
 }
 
 error_at_curr :: proc(fmt_str: string, args: ..any) {
-	dispatch_error_at_tok(p.curr_token, fmt_str, ..args)
+	error_at_tok(p.curr_token, fmt_str, ..args)
 }
 
 is_at_end :: proc() -> bool {

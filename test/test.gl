@@ -11,4 +11,5 @@ uniform float time
 
 func main(vec3 pos) {
     gl_Position = pos + sin(time)
+    -
 }

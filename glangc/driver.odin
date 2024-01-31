@@ -6,8 +6,8 @@ import "core:os"
 import "shared:clodin"
 
 import "common"
-import "report"
 import "parser"
+import "report"
 import "sema"
 
 input_file := ""
@@ -19,13 +19,16 @@ parse_cli :: proc() {
 	clodin.program_description = "The official GLang compiler"
 	clodin.program_version = "0.0.1"
 	clodin.program_information = fmt.aprintf(
-		"Written by Sjoerd Vermeulen.\n" + 
-		"Built for %s on %s%s.\n" + 
+		"Written by Sjoerd Vermeulen.\n" +
+		"Built for %s on %s%s.\n" +
 		"See https://github.com/SjVer/GLang for more information.",
-		ODIN_OS, ODIN_ARCH, " (debug)" when ODIN_DEBUG else "")
+		ODIN_OS,
+		ODIN_ARCH,
+		" (debug)" when ODIN_DEBUG else "",
+	)
 
 	clodin.start_os_args()
-	
+
 	input_file = clodin.pos_string("FILE", "The input file")
 
 	verbose = clodin.flag("verbose", "Produce verbose output")
@@ -34,13 +37,23 @@ parse_cli :: proc() {
 		common.Target.Default,
 		"target",
 		fmt.aprintf(
-			"The compilation target\n" +
-			"(derived from source by default)",
+			"The compilation target\n" + "(derived from source by default)",
 		),
 	)
 
 	// finish() exits on failure, so if it doesn't there's no failure
 	if !clodin.finish() do os.exit(0)
+}
+
+check_for_errors :: proc() {
+	if report.has_error() {
+		report.sort_reports()
+		for r in report.reports do report.render(r)
+		report.fatal(
+			"could not compile '%s' due to previous error",
+			input_file,
+		)
+	}
 }
 
 main :: proc() {
@@ -58,18 +71,20 @@ main :: proc() {
 	// parse input file
 	log.info("parsing", input_file)
 	ast := parser.parse_file(input_file)
+	// NOTE: we do not check for errors yet
+	// since we can do sema on malformed ASTs
 	log.info("parsed", input_file)
 	
 	// check target
 	if target == .Default do target = ast.target
 	if target == .Default {
-		log.error("no target specified")
-		os.exit(1)
+		report.fatal("no target specified")
 	}
 	
 	// do semantic analysis
 	log.info("analyzing", input_file)
 	mod := sema.analyze(ast)
+	check_for_errors()
 	log.info("analyzed", input_file)
 	
 	for s in mod {

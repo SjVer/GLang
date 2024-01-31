@@ -27,8 +27,7 @@ analyze :: proc(ast: p.AST) -> Module {
 
 		if name in scope.symbols {
 			rep := r.error(span, "redeclaration of global '%s'", name)
-			r.add_note(&rep, scope.symbols[name], "previously declared here")
-			r.dispatch(rep)
+			r.add_note(rep, scope.symbols[name], "previously declared here")
 		} else do scope.symbols[name] = span
 	}
     
@@ -59,8 +58,7 @@ a_builtin_type :: proc(type: p.Builtin_Type) -> (ret: Decl, ok: bool) {
 
 	if name in types {
 		rep := r.error(type.span, "redeclaration of type '%s'", name)
-		r.add_note(&rep, types[name], "previously declared here")
-		r.dispatch(rep)
+		r.add_note(rep, types[name], "previously declared here")
 	} else {
 		types[name] = type.span
 	}

@@ -6,9 +6,9 @@ import "core:strings"
 import "../common"
 import "../report"
 
-dispatch_error_at_tok :: proc(tok: Token, msg: string, args: ..any) {
+error_at_tok :: proc(tok: Token, msg: string, args: ..any) {
 	span := report.span_of_pos(tok.pos, len(tok.text))
-	report.dispatch_error_at_span(span, msg, ..args)
+	report.error(span, msg, ..args)
 }
 
 span_to_prev_from :: proc(start: Pos) -> Span {
@@ -49,7 +49,7 @@ parse_file :: proc(file_path: string) -> AST {
 		text := p.prev_token.text[1:len(p.prev_token.text) - 1]
 		target, ok := common.parse_target(text)
 		if !ok {
-			dispatch_error_at_tok(p.prev_token, "invalid target '%s'", text)
+			error_at_tok(p.prev_token, "invalid target '%s'", text)
 		} else {
 			mod.target = target
 			log.info("target:", common.TARGET_STRINGS[target])

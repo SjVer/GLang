@@ -53,7 +53,7 @@ logger_proc :: proc(
 	options: log.Options,
 	location := #caller_location,
 ) {
-	// see `log.file_console_logger_proc` source
+	// see `core:log.file_console_logger_proc` source
 
 	handle := os.stdout if level <= .Info else os.stderr
 
@@ -68,6 +68,8 @@ logger_proc :: proc(
 	}
 	do_level_header(options, level, &buf)
 	fmt.fprintf(handle, "%s: %s\n", strings.to_string(buf), text)
+
+	has_reported = true
 }
 
 create_logger :: proc(verbose: bool) -> log.Logger {
