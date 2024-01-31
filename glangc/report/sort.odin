@@ -3,6 +3,7 @@ package glangc_report
 
 import "core:sort"
 import "core:strings"
+import "core:log"
 
 // we reference `reports` through `it.collection`
 // but as long as we have only one collection of
@@ -23,6 +24,14 @@ it_less :: proc(it: sort.Interface, a, b: int) -> bool {
     else if !a_has_span do return false
     assert(a_has_span && b_has_span)
     
+    // lil sanity check
+    if span_a.start.file != span_a.end.file {
+        log.debugf("weird span: '%s' != %s'", span_a.start.file, span_a.end.file)
+    }
+    if span_b.start.file != span_b.end.file {
+        log.debugf("weird span: '%s' != %s'", span_b.start.file, span_b.end.file)
+    }
+
     // compare files
     cmp := strings.compare(span_a.start.file, span_b.start.file)
     if cmp == -1 do return true // a comes first
