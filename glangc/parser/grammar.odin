@@ -133,6 +133,8 @@ parse_global :: proc(kind: Global_Kind) -> (ret: Global, ok: bool) {
 }
 
 parse_func_sig :: proc(builtin := false) -> (ret: Function, ok: bool) {
+	start := builtin ? p.prev_token.pos : p.curr_token.pos
+
 	// name
 	consume(.Ident) or_return
 	ret.symbol.name = prev_identifier()
@@ -161,6 +163,7 @@ parse_func_sig :: proc(builtin := false) -> (ret: Function, ok: bool) {
 	ret.returns = nil
 	if match(.Arrow) do ret.returns = parse_type() or_return
 
+	ret.symbol.span = span_to_prev_from(start)
 	return ret, true
 }
 

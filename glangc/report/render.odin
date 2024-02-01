@@ -66,7 +66,7 @@ render_span :: proc(
 	is_last := true,
 	msg: Maybe(string) = nil,
 ) {
-	fmt.fprintf(handle, " " + BOLD_CYAN + "%s" + RESET, span.start.file)
+	fmt.fprintf(handle, " " + BOLD_CYAN + "%s" + RESET, span_to_string(span))
 	fmt.fprintln(handle)
 
 	line := span.start.line
@@ -77,8 +77,8 @@ render_span :: proc(
 	// the length of the highlighted bit
 	highlight_len :=
 		line == span.end.line \
-		? span.end.offset - span.start.offset \
-		: len(curr_line) - span.start.offset
+		? span.end.column - span.start.column \
+		: len(curr_line) - span.start.column
 
 	// find the width of the largest lineno
 	lineno_len := len(fmt.aprint(line))
@@ -129,7 +129,7 @@ render_span :: proc(
 
 		// squiggly underline
 
-		underline := strings.repeat("~", highlight_len - 1)
+		underline := strings.repeat("~", max(highlight_len - 1, 0))
 		defer delete(underline)
 
 		fmt.fprintf(handle, "%s%s^%s ", col_padding, highlight_col, underline)
@@ -154,8 +154,9 @@ render_related :: proc(report: Report, is_last: bool) {
 	} else {
 		fmt.fprintf(
 			handle,
-			" %srelated" + BOLD_WHITE + ":" + RESET + " %s",
+			" %srelated %s" + BOLD_WHITE + ":" + RESET + " %s",
 			REPORT_TYPE_COLORS[report.type],
+			REPORT_TYPE_NAMES[report.type],
 			report.message,
 		)
 		fmt.fprintln(handle)

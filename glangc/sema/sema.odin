@@ -30,10 +30,10 @@ analyze :: proc(ast: p.AST) -> Module {
 			r.add_note(rep, scope.symbols[name], "previously declared here")
 		} else do scope.symbols[name] = span
 	}
-    
+
 	// ananlyze them
 	for d in ast.decls {
-        decl, ok := a_decl(d)
+		decl, ok := a_decl(d)
 		if ok && decl != nil do append(&decls, decl)
 	}
 
@@ -92,36 +92,37 @@ a_global :: proc(glob: p.Global) -> (ret: Decl, ok: bool) {
 }
 
 a_function :: proc(func: p.Function) -> (ret: Decl, ok: bool) {
-	type := a_function_type(func.params, func.returns, func.span.end) or_return
+	end_pos := func.symbol.end
+	type := a_function_type(func.params, func.returns, end_pos) or_return
 	symbol := Symbol(FuncType){type, func.symbol.name.text}
 
 	if block, ok := func.block.?; ok {
-        // normal function
-        
-        // we analyze the block in a new scope
-        // so we gather the params as well
-        push_state()
+		// normal function
 
-        params : [dynamic]Symbol(^Type)
-        for i in 0..<len(func.params) {
-            type := &type.params[i]
-            name := "<anonymous>"
-            if ident, ok := func.params[i].name.?; ok {
-                name = ident.text
-            }
+		// we analyze the block in a new scope
+		// so we gather the params as well
+		push_state()
 
-            append(&params, Symbol(^Type){type, name})
-            add_local(name, func.params[i].span)
-        }
-        
-        block := a_block_stmt(block) or_return
-        pop_state()
+		params: [dynamic]Symbol(^Type)
+		for i in 0 ..< len(func.params) {
+			type := &type.params[i]
+			name := "<anonymous>"
+			if ident, ok := func.params[i].name.?; ok {
+				name = ident.text
+			}
 
-        return Function{symbol, params, block}, true
-    } else {
+			append(&params, Symbol(^Type){type, name})
+			add_local(name, func.params[i].span)
+		}
+
+		block := a_block_stmt(block) or_return
+		pop_state()
+
+		return Function{symbol, params, block}, true
+	} else {
 		// builtin function
 		return cast(Builtin)symbol, true
-    }
+	}
 }
 
 // ============== statements ==============
@@ -281,23 +282,32 @@ a_literal_expr :: proc(expr: p.Literal_Expr) -> (ret: Literal_Expr, ok: bool) {
 a_function_type :: proc(
 	params: [dynamic]p.Param,
 	returns: Maybe(p.Type),
-    end_pos: p.Pos,
-) -> (ret: FuncType, ok: bool) {
-    for param in params {
-        type := a_type(param.type) or_return
-        append(&ret.params, type)
-    }
+	end_pos: p.Pos,
+) -> (
+	ret: FuncType,
+	ok: bool,
+) {
+	for param in params {
+		type := a_type(param.type) or_return
+		append(&ret.params, type)
+	}
 
-    if returns, ok := returns.?; ok {
-        type := a_type(returns) or_return
-        ret.returns = type
-    }
-    else {
-        check_type_exists("void", end_pos)
-        ret.returns = cast(identifier)"void"
-    }
+	if returns, ok := returns.?; ok {
+		type := a_type(returns) or_return
+		ret.returns = type
+	} else {
+		if "void" not_in types {
+			had_error = true
+			rep := r.error(
+				r.span_of_pos(end_pos, 0),
+				"use of undefined type 'void'",
+			)
+			r.add_note(rep, nil, "return type is implicit")
+		}
+		ret.returns = cast(identifier)"void"
+	}
 
-    return ret, true
+	return ret, true
 }
 
 a_type :: proc(type: p.Type) -> (ret: Type, ok: bool) {
