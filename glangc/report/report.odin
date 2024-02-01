@@ -22,6 +22,15 @@ Report :: struct {
 reports: [dynamic]Report
 
 sort_reports :: proc() {
+	// filter out multiple reports on the same span
+	spans : map[Span]bool
+	for r, i in reports {
+		if span, ok := r.span.?; ok {
+			if span in spans do unordered_remove(&reports, i)
+			else do spans[span] = true
+		}
+	}
+
 	sort.sort(SORT_INTERFACE)
 }
 

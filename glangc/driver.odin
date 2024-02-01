@@ -84,12 +84,16 @@ main :: proc() {
 	// do semantic analysis
 	log.info("analyzing", input_file)
 	mod := sema.analyze(ast)
-	check_for_errors()
+	// NOTE: we do not check for errors yet since
+	// we can do typecheckign on malformed programs
 	log.info("analyzed", input_file)
 	
 	for s in mod {
 		log.debugf("\n%#v", s)
 	}
+
+	// we finally report our errors
+	check_for_errors()
 
 	log.info("done")
 }
