@@ -2,13 +2,13 @@ target "GLSL-410"
 
 builtin type void
 builtin type float
-builtin type vec3
 
 builtin func sin(float) -> float
-builtin vec3 gl_Position
+
+builtin float gl_Position
 
 uniform float time
 
-func main(vec3 pos) {
+func main(float pos) {
     gl_Position = pos + sin(time)
 }

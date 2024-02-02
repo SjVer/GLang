@@ -132,6 +132,5 @@ get_expr_span :: proc(expr: Expr) -> Span {
 		case Literal_Expr: return report.span_of_pos(e.pos, len(e.text))
 		case Identifier: return report.span_of_pos(e.pos, len(e.text))
 	}
-	assert(false, "invalid AST expr")
-	return {}
+	panic("invalid AST expr")
 }

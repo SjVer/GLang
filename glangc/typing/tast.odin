@@ -1,18 +1,20 @@
-package glangc_sema
+package glangc_typing
 
 import "../report"
 
-Module :: distinct [dynamic]Decl
-
-Decl :: union {
-	Builtin,
-	Global,
-	Function,
+TAST :: struct {
+	decls: [dynamic]Decl,
 }
 
 Symbol :: struct($TypeType: typeid) {
 	type: TypeType,
 	name: string,
+}
+
+Decl :: union {
+	Builtin,
+	Global,
+	Function,
 }
 
 Builtin :: union {
@@ -55,7 +57,9 @@ Return_Stmt :: struct {
 	expr: Maybe(Expr),
 }
 
-Expr_Stmt :: distinct Expr
+Expr_Stmt :: struct {
+	expr: Expr,
+}
 
 // ============== expressions ==============
 
@@ -63,6 +67,7 @@ Expr :: union {
 	Assign_Expr,
 	Binary_Expr,
 	Call_Expr,
+	Cast_Expr,
 	Literal_Expr,
 	identifier,
 }
@@ -72,7 +77,7 @@ Assign_Expr :: struct {
 	expr: ^Expr,
 }
 
-Bin_Op :: enum {
+Binary_Op :: enum {
 	Eq, // =
 	Add, // +
 	Sub, // -
@@ -94,7 +99,7 @@ Bin_Op :: enum {
 }
 
 Binary_Expr :: struct {
-	op:  Bin_Op,
+	op:  Binary_Op,
 	lhs: ^Expr,
 	rhs: ^Expr,
 }
@@ -102,6 +107,11 @@ Binary_Expr :: struct {
 Call_Expr :: struct {
 	callee: string,
 	args:   [dynamic]Expr,
+}
+
+Cast_Expr :: struct {
+	type: Type,
+	expr: ^Expr,
 }
 
 Literal_Expr :: union {
@@ -143,4 +153,34 @@ FuncType :: struct {
 
 Type :: union {
 	identifier,
+	Primitive_Type,
+}
+
+Primitive_Type :: enum {
+	Integer,
+	Float,
+	Void,
+}
+
+type_to_string :: proc(type: Type) -> string {
+	switch type in type {
+		case nil:
+			return "<error>"
+
+		case Primitive_Type:
+			switch type {
+				case .Integer:
+					return "#int"
+				case .Float:
+					return "#float"
+				case .Void:
+					return "#void"
+			}
+
+		case identifier:
+			return auto_cast type
+	}
+
+	assert(false, "invalid type")
+	return ""
 }

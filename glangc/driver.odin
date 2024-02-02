@@ -9,6 +9,7 @@ import "common"
 import "report"
 import "parse"
 import "sema"
+import "typing"
 
 input_file := ""
 verbose := false
@@ -46,14 +47,17 @@ parse_cli :: proc() {
 }
 
 check_for_errors :: proc() {
+	when !ODIN_DEBUG do report.sort_reports()
+	for r in report.reports do report.render(r)
+
 	if report.has_error() {
-		report.sort_reports()
-		for r in report.reports do report.render(r)
 		report.fatal(
 			"could not compile '%s' due to previous error",
 			input_file,
 		)
 	}
+
+	clear(&report.reports)
 }
 
 main :: proc() {
@@ -63,16 +67,9 @@ main :: proc() {
 	context.logger = report.create_logger(verbose)
 	when ODIN_DEBUG do log.info("running debug build")
 
-	// log.info("options:")
-	// log.info("\tinput file:", input_file)
-	// log.info("\tverbose:", verbose)
-	// log.info("\ttarget:", target)
-
 	// parse input file
 	log.info("parsing", input_file)
 	ast := parse.parse_file(input_file)
-	// NOTE: we do not check for errors yet
-	// since we can do sema on malformed ASTs
 	log.info("parsed", input_file)
 	
 	// check target
@@ -83,13 +80,14 @@ main :: proc() {
 	
 	// do semantic analysis
 	log.info("analyzing", input_file)
-	mod := sema.analyze(ast)
-	// NOTE: we do not check for errors yet since
-	// we can do typecheckign on malformed programs
+	sema.analyze(ast)
 	log.info("analyzed", input_file)
 	
-	for s in mod {
-		log.debugf("\n%#v", s)
+	// do typechecking
+	tast := typing.type_ast(ast)
+
+	for d in tast.decls {
+		log.debugf("\n%#v", d)
 	}
 
 	// we finally report our errors

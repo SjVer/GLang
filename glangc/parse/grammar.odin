@@ -263,10 +263,11 @@ parse_binary_expr :: proc(
 	prec := MAX_PRECEDENCE,
 ) -> (
 	expr: Expr,
-	oik: bool,
+	ok: bool,
 ) {
 	if prec <= 0 do return parse_unary_expr(or_stmt)
 
+	start := p.curr_token.pos
 	lhs := parse_binary_expr(or_stmt, prec - 1) or_return
 
 	for get_precedence(p.curr_token.kind) == prec {
@@ -279,12 +280,14 @@ parse_binary_expr :: proc(
 			expr := Assign_Expr{}
 			expr.dest = new_clone(lhs)
 			expr.expr = new_clone(rhs)
+			expr.span = span_to_prev_from(start)
 			lhs = expr
 		} else {
 			expr := Binary_Expr{}
 			expr.op = op.kind
 			expr.lhs = new_clone(lhs)
 			expr.rhs = new_clone(rhs)
+			expr.span = span_to_prev_from(start)
 			lhs = expr
 		}
 	}
