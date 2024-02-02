@@ -6,8 +6,8 @@ import "core:os"
 import "shared:clodin"
 
 import "common"
-import "report"
 import "parse"
+import "report"
 import "sema"
 import "typing"
 
@@ -71,18 +71,18 @@ main :: proc() {
 	log.info("parsing", input_file)
 	ast := parse.parse_file(input_file)
 	log.info("parsed", input_file)
-	
+
 	// check target
 	if target == .Default do target = ast.target
 	if target == .Default {
 		report.fatal("no target specified")
 	}
-	
+
 	// do semantic analysis
 	log.info("analyzing", input_file)
 	sema.analyze(ast)
 	log.info("analyzed", input_file)
-	
+
 	// do typechecking
 	tast := typing.type_ast(ast)
 

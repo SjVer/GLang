@@ -9,6 +9,6 @@ builtin float gl_Position
 
 uniform float time
 
-func main(float pos) {
+func main(vec3 pos) {
     gl_Position = pos + sin(time)
 }

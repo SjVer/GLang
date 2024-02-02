@@ -87,7 +87,7 @@ error :: proc(
 	return make(.Error, span, msg, ..args, loc = loc)
 }
 
-fatal :: proc(msg: string, args: ..any, loc := #caller_location) {
+fatal :: proc(msg: string, args: ..any, exit := true, loc := #caller_location) {
 	rep := Report {
 		loc = loc,
 		type = .Fatal,
@@ -96,7 +96,7 @@ fatal :: proc(msg: string, args: ..any, loc := #caller_location) {
 		related = {},
 	}
 	render(rep)
-	os.exit(1)
+	if exit do os.exit(1)
 }
 
 add_note :: proc(
