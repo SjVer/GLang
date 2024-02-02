@@ -1,8 +1,9 @@
 package glangc_report
 
 import "core:fmt"
-import "core:sort"
 import "core:os"
+import "core:runtime"
+import "core:sort"
 
 Report_Type :: enum {
 	Note,
@@ -13,6 +14,7 @@ Report_Type :: enum {
 }
 
 Report :: struct {
+	loc:     runtime.Source_Code_Location,
 	type:    Report_Type,
 	message: string,
 	span:    Maybe(Span),
@@ -23,7 +25,7 @@ reports: [dynamic]Report
 
 sort_reports :: proc() {
 	// filter out multiple reports on the same span
-	spans : map[Span]bool
+	spans: map[Span]bool
 	for r, i in reports {
 		if span, ok := r.span.?; ok {
 			if span in spans do unordered_remove(&reports, i)
@@ -47,8 +49,10 @@ make :: proc(
 	span: Maybe(Span),
 	msg: string,
 	args: ..any,
+	loc := #caller_location,
 ) -> ^Report {
 	rep := Report {
+		loc = loc,
 		type = type,
 		message = fmt.aprintf(msg, ..args),
 		span = span,
@@ -58,18 +62,34 @@ make :: proc(
 	return &reports[len(reports) - 1]
 }
 
-note :: proc(span: Maybe(Span), msg: string, args: ..any) -> ^Report {
-	return make(.Note, span, msg, ..args)
+note :: proc(
+	span: Maybe(Span),
+	msg: string,
+	args: ..any,
+	loc := #caller_location,
+) -> ^Report {
+	return make(.Note, span, msg, ..args, loc = loc)
 }
-warning :: proc(span: Maybe(Span), msg: string, args: ..any) -> ^Report {
-	return make(.Warning, span, msg, ..args)
+warning :: proc(
+	span: Maybe(Span),
+	msg: string,
+	args: ..any,
+	loc := #caller_location,
+) -> ^Report {
+	return make(.Warning, span, msg, ..args, loc = loc)
 }
-error :: proc(span: Maybe(Span), msg: string, args: ..any) -> ^Report {
-	return make(.Error, span, msg, ..args)
+error :: proc(
+	span: Maybe(Span),
+	msg: string,
+	args: ..any,
+	loc := #caller_location,
+) -> ^Report {
+	return make(.Error, span, msg, ..args, loc = loc)
 }
 
-fatal :: proc(msg: string, args: ..any) {
-	rep := Report{
+fatal :: proc(msg: string, args: ..any, loc := #caller_location) {
+	rep := Report {
+		loc = loc,
 		type = .Fatal,
 		message = fmt.aprintf(msg, ..args),
 		span = nil,
@@ -84,8 +104,10 @@ add_note :: proc(
 	span: Maybe(Span),
 	msg: string,
 	args: ..any,
+	loc := #caller_location,
 ) {
 	rep := Report {
+		loc = loc,
 		type = .Note,
 		message = fmt.aprintf(msg, ..args),
 		span = span,

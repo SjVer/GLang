@@ -1,6 +1,7 @@
 package glangc_report
 
 import "core:fmt"
+import "core:log"
 import "core:os"
 import "core:strings"
 
@@ -66,6 +67,17 @@ render_span :: proc(
 	is_last := true,
 	msg: Maybe(string) = nil,
 ) {
+	if span == {} {
+		fmt.fprintf(
+			handle,
+			" " + BOLD_CYAN + "<invalid source location> %s" + RESET,
+			span_to_string(span),
+		)
+		fmt.fprintln(handle)
+		if msg != nil do fmt.fprintln(handle, "  ", msg)
+		return
+	}
+
 	fmt.fprintf(handle, " " + BOLD_CYAN + "%s" + RESET, span_to_string(span))
 	fmt.fprintln(handle)
 
@@ -167,6 +179,7 @@ render :: proc(report: Report) {
 	if has_reported do fmt.fprintln(handle)
 	else do has_reported = true
 
+	log.debug("report source:", report.loc)
 	render_header(report.type, report.message)
 	if span, ok := report.span.?; ok {
 		render_span(report.type, span, len(report.related) == 0)
