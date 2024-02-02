@@ -1,5 +1,6 @@
 target "GLSL-410"
 
+builtin type void
 builtin type float
 builtin type vec3
 

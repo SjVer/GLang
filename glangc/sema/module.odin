@@ -1,5 +1,7 @@
 package glangc_sema
 
+import "../report"
+
 Module :: distinct [dynamic]Decl
 
 Decl :: union {
@@ -31,8 +33,8 @@ Global :: struct {
 
 Function :: struct {
 	using symbol: Symbol(FuncType),
-    // params' types point to the symbol type
-    // so no need for memory fuckery
+	// params' types point to the symbol type
+	// so no need for memory fuckery
 	params:       [dynamic]Symbol(^Type),
 	block:        Block_Stmt,
 }
@@ -62,7 +64,7 @@ Expr :: union {
 	Binary_Expr,
 	Call_Expr,
 	Literal_Expr,
-    identifier,
+	identifier,
 }
 
 Assign_Expr :: struct {
@@ -105,7 +107,6 @@ Call_Expr :: struct {
 Literal_Expr :: union {
 	Lit_Integer,
 	Lit_Float,
-	string,
 }
 
 identifier :: distinct string

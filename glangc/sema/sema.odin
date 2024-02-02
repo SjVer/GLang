@@ -1,6 +1,6 @@
 package glangc_sema
 
-import p "../parser"
+import p "../parse"
 import r "../report"
 import "core:strconv"
 
@@ -16,19 +16,22 @@ analyze :: proc(ast: p.AST) -> Module {
 
 		switch d in d {
 			case p.Builtin_Type:
-				continue
+				add_type(d.name.text, d.span)
+
 			case p.Global:
 				name = d.symbol.name.text
 				span = d.symbol.span
+				type, _ := a_type(d.type)
+				// TODO: do smth if type was invalid?
+				add_global(name, type, span)
+
 			case p.Function:
 				name = d.symbol.name.text
 				span = d.symbol.span
+				type, _ := a_function_type(d.params, d.returns, d.symbol.end)
+				// TODO: do smth if type was invalid?
+				add_function(name, type, span)
 		}
-
-		if name in scope.symbols {
-			rep := r.error(span, "redeclaration of global '%s'", name)
-			r.add_note(rep, scope.symbols[name], "previously declared here")
-		} else do scope.symbols[name] = span
 	}
 
 	// ananlyze them
@@ -54,15 +57,6 @@ a_decl :: proc(decl: p.Decl) -> (ret: Decl, ok: bool) {
 }
 
 a_builtin_type :: proc(type: p.Builtin_Type) -> (ret: Decl, ok: bool) {
-	name := type.name.text
-
-	if name in types {
-		rep := r.error(type.span, "redeclaration of type '%s'", name)
-		r.add_note(rep, types[name], "previously declared here")
-	} else {
-		types[name] = type.span
-	}
-
 	// TODO: store types in module too
 	return nil, true
 }
@@ -78,11 +72,15 @@ a_global :: proc(glob: p.Global) -> (ret: Decl, ok: bool) {
 		case .Builtin:
 			assert(glob.value == nil, "builtin global cannot have value")
 			return cast(Builtin)symbol, true
+
 		case .Normal:
 			if v, ok := glob.value.?; ok {
-				value = a_expr(v) or_return
+				vvalue := a_expr(v) or_return
+				typecheck_expr(vvalue, type, p.get_expr_span(v))
+				value = vvalue
 			}
 			kind = .Normal
+
 		case .Uniform:
 			assert(glob.value == nil, "uniform global cannot have value")
 			kind = .Uniform
@@ -92,8 +90,11 @@ a_global :: proc(glob: p.Global) -> (ret: Decl, ok: bool) {
 }
 
 a_function :: proc(func: p.Function) -> (ret: Decl, ok: bool) {
-	end_pos := func.symbol.end
-	type := a_function_type(func.params, func.returns, end_pos) or_return
+	type := a_function_type(
+		func.params,
+		func.returns,
+		func.symbol.end,
+	) or_return
 	symbol := Symbol(FuncType){type, func.symbol.name.text}
 
 	if block, ok := func.block.?; ok {
@@ -112,7 +113,7 @@ a_function :: proc(func: p.Function) -> (ret: Decl, ok: bool) {
 			}
 
 			append(&params, Symbol(^Type){type, name})
-			add_local(name, func.params[i].span)
+			add_local(name, type^, func.params[i].span)
 		}
 
 		block := a_block_stmt(block) or_return
@@ -142,10 +143,12 @@ a_stmt :: proc(stmt: p.Stmt) -> (ret: Stmt, ok: bool) {
 }
 
 a_block_stmt :: proc(stmt: p.Block_Stmt) -> (ret: Block_Stmt, ok: bool) {
+	push_state()
 	for s in stmt.statements {
 		s := a_stmt(s) or_return
 		append(&ret.statements, s)
 	}
+	pop_state()
 	return ret, true
 }
 
@@ -297,7 +300,6 @@ a_function_type :: proc(
 		ret.returns = type
 	} else {
 		if "void" not_in types {
-			had_error = true
 			rep := r.error(
 				r.span_of_pos(end_pos, 0),
 				"use of undefined type 'void'",

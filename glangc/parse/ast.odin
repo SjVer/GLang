@@ -121,3 +121,17 @@ Identifier :: struct {
 Type :: union {
 	Identifier,
 }
+
+// ============== helpers ==============
+
+get_expr_span :: proc(expr: Expr) -> Span {
+	switch e in expr {
+		case Assign_Expr: return e.span
+		case Binary_Expr: return e.span
+		case Call_Expr: return e.span
+		case Literal_Expr: return report.span_of_pos(e.pos, len(e.text))
+		case Identifier: return report.span_of_pos(e.pos, len(e.text))
+	}
+	assert(false, "invalid AST expr")
+	return {}
+}

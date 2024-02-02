@@ -6,8 +6,8 @@ import "core:os"
 import "shared:clodin"
 
 import "common"
-import "parser"
 import "report"
+import "parse"
 import "sema"
 
 input_file := ""
@@ -70,7 +70,7 @@ main :: proc() {
 
 	// parse input file
 	log.info("parsing", input_file)
-	ast := parser.parse_file(input_file)
+	ast := parse.parse_file(input_file)
 	// NOTE: we do not check for errors yet
 	// since we can do sema on malformed ASTs
 	log.info("parsed", input_file)
