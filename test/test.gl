@@ -5,10 +5,8 @@ builtin type float
 
 builtin func sin(float) -> float
 
-builtin float gl_Position
-
 uniform float time
 
-func main(vec3 pos) {
-    gl_Position = pos + sin(time)
+func main(float x) -> float {
+    return x + sin(time)
 }

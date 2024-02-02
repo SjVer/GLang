@@ -26,13 +26,6 @@ prev_identifier :: proc() -> Identifier {
 	return Identifier{p.prev_token.pos, p.prev_token.text}
 }
 
-consume_newlines :: proc() {
-	if !skip_newlines() && !is_at_end() {
-		consume(.Semicolon)
-		for !match(.Semicolon) && !is_at_end() do advance()
-	}
-}
-
 // ============== toplevel ==============
 
 parse_file :: proc(file_path: string) -> AST {
@@ -62,10 +55,10 @@ parse_file :: proc(file_path: string) -> AST {
 	for !is_at_end() {
 		decl, ok := parse_decl()
 		if !ok do return mod
-
+		
 		append(&mod.decls, decl)
 
-		consume_newlines()
+		skip_newlines()
 	}
 
 	return mod
@@ -207,7 +200,7 @@ parse_block_stmt :: proc() -> (ret: Block_Stmt, ok: bool) {
 		stmt := parse_stmt(true) or_return
 		append(&ret.statements, stmt)
 
-		consume_newlines()
+		skip_newlines()
 	}
 
 	consume(.Close_Brace) or_return
@@ -223,7 +216,7 @@ parse_return_stmt :: proc() -> (ret: Return_Stmt, ok: bool) {
 		ret.expr = parse_expr() or_return
 	}
 	ret.span = span_to_prev_from(start)
-
+	
 	consume_semicolon() or_return
 	return ret, true
 }
