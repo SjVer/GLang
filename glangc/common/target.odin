@@ -2,12 +2,14 @@ package glangc_common
 
 Target :: enum {
     Default,
+    C,
 	GLSL_410,
 }
 
 TARGET_STRINGS: map[Target]string = {
     .Default = "default",
-    .GLSL_410 = "GLSL-410"
+    .C = "C",
+    .GLSL_410 = "GLSL-410",
 }
 
 parse_target :: proc(input: string) -> (res: Target, ok: bool) {

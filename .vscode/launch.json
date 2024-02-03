@@ -10,7 +10,7 @@
             "request": "launch",
 
             "program": "${workspaceFolder}/bin/glangc",
-            "args": ["-verbose", "test/test.gl"],
+            "args": ["-verbose", "test/test.gl", "-out:bin/test.txt"],
             "cwd": "${workspaceFolder}",
             "environment": [],
             
@@ -39,7 +39,7 @@
             "request": "launch",
 
             "program": "${workspaceFolder}/bin/glangc",
-            "args": ["-verbose", "test/test.gl"],
+            "args": ["-verbose", "test/test.gl", "-out:bin/test.txt"],
             "cwd": "${workspaceFolder}",
             "environment": [],
             

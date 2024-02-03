@@ -38,7 +38,7 @@ $(BINDIR)/$(EXE): $(SOURCES) | makedirs
 
 test: glangc
 	$(eval _args=$(subst $(COMMA),$(SPACE),$(args)))
-	$(eval _cmd=$(BINDIR)/glangc -verbose test/test.gl $(_args))
+	$(eval _cmd=$(BINDIR)/glangc -verbose test/test.gl -out:bin/test.txt $(_args))
 	@printf "$(G)# $(_cmd)$(N)\n"
 	@$(_cmd)
 

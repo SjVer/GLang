@@ -5,6 +5,7 @@ import "core:log"
 import "core:os"
 import "shared:clodin"
 
+import "codegen"
 import "common"
 import "parse"
 import "report"
@@ -13,6 +14,7 @@ import "typing"
 
 input_file := ""
 verbose := false
+output_file: Maybe(string) = nil
 target := common.Target.Default
 
 parse_cli :: proc() {
@@ -33,6 +35,7 @@ parse_cli :: proc() {
 	input_file = clodin.pos_string("FILE", "The input file")
 
 	verbose = clodin.flag("verbose", "Produce verbose output")
+	output_file = clodin.opt_string("out", "Sets the output file name")
 	target = clodin.opt_arg(
 		common.parse_target,
 		common.Target.Default,
@@ -92,6 +95,17 @@ main :: proc() {
 
 	// we finally report our errors
 	check_for_errors()
+
+	// codegen
+	log.info("generating code")
+	code := codegen.gen_code(tast, target)
+	log.info("code generated")
+
+	log.debugf("output:\n%s", code)
+
+	// write it
+	filename := output_file.? or_else "out.txt"
+	os.write_entire_file(filename, transmute([]byte)code)
 
 	log.info("done")
 }
