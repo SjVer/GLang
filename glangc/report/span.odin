@@ -20,11 +20,17 @@ span_of_pos :: proc(pos: Pos, length := 0) -> Span {
 	return Span{pos, end}
 }
 
-span_to_string :: proc(span: Span) -> string {
-	return fmt.aprintf(
+span_to_string :: proc(span: Span, verbose := false) -> string {
+	str := fmt.aprintf(
 		"%s:%d:%d",
 		span.start.file,
 		span.start.line,
 		span.start.column,
 	)
+
+	if !verbose do return str
+	else {
+		assert(span.start.file == span.end.file, "huh")
+		return fmt.aprintf("%s-%d:%d", str, span.end.line, span.end.column)
+	}
 }

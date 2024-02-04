@@ -11,7 +11,12 @@ Symbol :: struct($TypeType: typeid) {
 	name: string,
 }
 
-Decl :: union {
+Decl :: struct {
+	span: report.Span,
+	decl: _Decl,
+}
+
+_Decl :: union {
 	Builtin,
 	Global,
 	Function,

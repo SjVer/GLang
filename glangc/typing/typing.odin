@@ -1,6 +1,7 @@
 package glangc_typing
 
 import p "../parse"
+import "../report"
 
 type_ast :: proc(ast: p.AST) -> TAST {
 	decls: [dynamic]Decl
@@ -30,30 +31,30 @@ type_ast :: proc(ast: p.AST) -> TAST {
 
 	// ananlyze them
 	for d in ast.decls {
-		decl := type_decl(d)
-		if decl != nil do append(&decls, decl)
+		decl, span := type_decl(d)
+		if decl != nil do append(&decls, Decl{span = span, decl = decl})
 	}
 
 	return TAST{decls = decls}
 }
 
-type_decl :: proc(decl: p.Decl) -> Decl {
+type_decl :: proc(decl: p.Decl) -> (_Decl, report.Span) {
 	switch decl in decl {
 		case p.Builtin_Type:
 			// we won't need this anymore
-			return nil
+			return nil, decl.span
 
 		case p.Global:
-			return type_global_decl(decl)
+			return type_global_decl(decl), decl.span
 
 		case p.Function:
-			return type_function_decl(decl)
+			return type_function_decl(decl), decl.span
 	}
 
 	panic("invalid AST decl")
 }
 
-type_global_decl :: proc(glob: p.Global) -> Decl {
+type_global_decl :: proc(glob: p.Global) -> _Decl {
 	symbol := Symbol(Type) {
 		name = glob.symbol.name.text,
 		type = parse_type(glob.type),
@@ -79,7 +80,7 @@ type_global_decl :: proc(glob: p.Global) -> Decl {
 	panic("invalid AST global kind")
 }
 
-type_function_decl :: proc(func: p.Function) -> Decl {
+type_function_decl :: proc(func: p.Function) -> _Decl {
 	functype := parse_function_type(func.params, func.returns)
 	symbol := Symbol(FuncType) {
 		name = func.symbol.name.text,

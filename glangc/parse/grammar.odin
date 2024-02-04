@@ -122,6 +122,7 @@ parse_global :: proc(kind: Global_Kind) -> (ret: Global, ok: bool) {
 	if kind != .Normal do ret.value = nil
 	else do ret.value = parse_expr() or_return
 
+	ret.span = span_to_prev_from(start)
 	return ret, true
 }
 
