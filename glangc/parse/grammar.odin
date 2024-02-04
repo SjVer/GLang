@@ -31,7 +31,7 @@ prev_identifier :: proc() -> Identifier {
 parse_file :: proc(file_path: string) -> AST {
 	init_parser(file_path)
 	mod := AST{}
-	mod.target = .Default
+	mod.target = nil
 
 	skip_newlines()
 
@@ -45,7 +45,7 @@ parse_file :: proc(file_path: string) -> AST {
 			error_at_tok(p.prev_token, "invalid target '%s'", text)
 		} else {
 			mod.target = target
-			log.info("target:", common.TARGET_STRINGS[target])
+			log.info("target:", target.name)
 		}
 	}
 

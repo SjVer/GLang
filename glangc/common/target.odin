@@ -1,20 +1,24 @@
 package glangc_common
 
-Target :: enum {
-    Default,
-    C,
-	GLSL_410,
+Target :: struct {
+	name:      string,
+	extension: string,
 }
 
-TARGET_STRINGS: map[Target]string = {
-    .Default = "default",
-    .C = "C",
-    .GLSL_410 = "GLSL-410",
+C_TARGET :: Target {
+	name      = "C",
+	extension = "c",
+}
+GLSL_410_TARGET :: Target {
+	name      = "GLSL-410",
+	extension = "glsl",
 }
 
-parse_target :: proc(input: string) -> (res: Target, ok: bool) {
-    for target, str in TARGET_STRINGS {
-        if input == str do return target, true
-    }
-    return nil, false
+TARGETS :: [?]Target{C_TARGET, GLSL_410_TARGET}
+
+parse_target :: proc(name: string) -> (res: Target, ok: bool) {
+	for target in TARGETS {
+		if name == target.name do return target, true
+	}
+	return {}, false
 }

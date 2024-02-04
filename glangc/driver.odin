@@ -15,7 +15,7 @@ import "typing"
 input_file := ""
 verbose := false
 output_file: Maybe(string) = nil
-target := common.Target.Default
+target: Maybe(common.Target) = nil
 
 parse_cli :: proc() {
 	clodin.program_name = os.args[0]
@@ -38,7 +38,6 @@ parse_cli :: proc() {
 	output_file = clodin.opt_string("out", "Sets the output file name")
 	target = clodin.opt_arg(
 		common.parse_target,
-		common.Target.Default,
 		"target",
 		fmt.aprintf(
 			"The compilation target\n" + "(derived from source by default)",
@@ -76,8 +75,11 @@ main :: proc() {
 	log.info("parsed", input_file)
 
 	// check target
-	if target == .Default do target = ast.target
-	if target == .Default {
+	the_target: common.Target = ---
+	if target == nil do target = ast.target
+	if target, ok := target.?; ok {
+		the_target = target
+	} else {
 		report.fatal("no target specified")
 	}
 
@@ -98,13 +100,14 @@ main :: proc() {
 
 	// codegen
 	log.info("generating code")
-	code := codegen.gen_code(tast, target)
+	code := codegen.gen_code(tast, the_target)
 	log.info("code generated")
 
 	log.debugf("output:\n%s", code)
 
 	// write it
-	filename := output_file.? or_else "out.txt"
+	default_filename := fmt.aprintf("out.%s", the_target.extension)
+	filename := output_file.? or_else default_filename
 	os.write_entire_file(filename, transmute([]byte)code)
 
 	log.info("done")

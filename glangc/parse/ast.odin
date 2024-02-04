@@ -11,7 +11,7 @@ InSpan :: struct($T: typeid) {
 }
 
 AST :: struct {
-	target: common.Target,
+	target: Maybe(common.Target),
 	decls:  [dynamic]Decl,
 }
 

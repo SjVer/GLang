@@ -3,20 +3,20 @@ package glangc_codegen
 import "core:strings"
 import "core:time"
 
-import "../common"
+import c "../common"
 import r "../report"
 import t "../typing"
 
 import g "generator"
 import "generators"
 
-TARGET_GENERATORS: map[common.Target]g.Generator = {
-	.C = generators.C_GENERATOR,
+TARGET_GENERATORS: map[string]g.Generator = {
+	c.C_TARGET.name = generators.C_GENERATOR,
 }
 
-gen_code :: proc(tast: t.TAST, target: common.Target) -> string {
-	assert(target in TARGET_GENERATORS)
-	gen := TARGET_GENERATORS[target]
+gen_code :: proc(tast: t.TAST, target: c.Target) -> string {
+	assert(target.name in TARGET_GENERATORS)
+	gen := TARGET_GENERATORS[target.name]
 
 	// set things up
 	gen.target = target
@@ -32,6 +32,7 @@ gen_code :: proc(tast: t.TAST, target: common.Target) -> string {
 		&gen, "time: %02d-%02d-%04d %02d:%02d:%02d",
 		day, month, year, hours, mins, secs,
 	)
+	g.gprintfcln(&gen, "target: %s", gen.target.name)
 	g.gprintfcln(&gen, "see: https://github.com/SjVer/GLang")
 	gen.gen_prelude(&gen)
 

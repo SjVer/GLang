@@ -7,6 +7,8 @@ RM = rm
 MKDIR = mkdir
 TC = touch
 
+FLAGS := -error-pos-style:unix
+
 # =================== variables ===================
 
 Y = \033[0;33m
@@ -31,7 +33,7 @@ endif
 
 $(BINDIR)/$(EXE): $(SOURCES) | makedirs
 	@printf "$(Y)[$(EXE)]$(N) "
-	odin build $(SRCDIR) -out:$@ $(if $(release),,-debug)
+	odin build $(SRCDIR) $(FLAGS) -out:$@ $(if $(release),,-debug)
 	@echo $(PROFILE) > $(BINDIR)/profile
 
 # ===================== tools =====================
