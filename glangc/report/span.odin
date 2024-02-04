@@ -27,10 +27,15 @@ span_to_string :: proc(span: Span, verbose := false) -> string {
 		span.start.line,
 		span.start.column,
 	)
-
 	if !verbose do return str
-	else {
-		assert(span.start.file == span.end.file, "huh")
+
+	// verbose
+
+	assert(span.start.file == span.end.file, "huh")
+
+	if span.start.line == span.end.line {
+		return fmt.aprintf("%s-%d", str, span.end.column)
+	} else {
 		return fmt.aprintf("%s-%d:%d", str, span.end.line, span.end.column)
 	}
 }

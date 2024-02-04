@@ -69,10 +69,12 @@ main :: proc() {
 	context.logger = report.create_logger(verbose)
 	when ODIN_DEBUG do log.info("running debug build")
 
-	// parse input file
-	log.info("parsing", input_file)
+	// frontend
 	ast := parse.parse_file(input_file)
-	log.info("parsed", input_file)
+	sema.analyze(ast)
+	tast := typing.type_ast(ast)
+
+	check_for_errors()
 
 	// check target
 	the_target: common.Target = ---
@@ -83,32 +85,14 @@ main :: proc() {
 		report.fatal("no target specified")
 	}
 
-	// do semantic analysis
-	log.info("analyzing", input_file)
-	sema.analyze(ast)
-	log.info("analyzed", input_file)
-
-	// do typechecking
-	tast := typing.type_ast(ast)
-
-	for d in tast.decls {
-		log.debugf("\n%#v", d)
-	}
-
-	// we finally report our errors
-	check_for_errors()
-
 	// codegen
-	log.info("generating code")
 	code := codegen.gen_code(tast, the_target)
-	log.info("code generated")
 
 	log.debugf("output:\n%s", code)
 
 	// write it
 	default_filename := fmt.aprintf("out.%s", the_target.extension)
 	filename := output_file.? or_else default_filename
+	log.infof("writing output to '%s'", filename)
 	os.write_entire_file(filename, transmute([]byte)code)
-
-	log.info("done")
 }

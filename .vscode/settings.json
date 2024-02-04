@@ -1,5 +1,6 @@
 {
     "files.associations": {
         "*.txt": "c"
-    }
+    },
+    "explorer.excludeGitIgnore": true
 }
