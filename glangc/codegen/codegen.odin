@@ -11,11 +11,13 @@ import g "generator"
 import "generators"
 
 TARGET_GENERATORS: map[string]g.Generator = {
-	c.C_TARGET.name = generators.C_GENERATOR,
+	c.C_TARGET.name           = generators.C_GENERATOR,
+	c.GLSL_300_ES_TARGET.name = generators.GLSL_300_ES_GENERATOR,
+	c.GLSL_410_TARGET.name    = generators.GLSL_410_GENERATOR,
 }
 
 gen_code :: proc(tast: t.TAST, target: c.Target) -> string {
-	assert(target.name in TARGET_GENERATORS)
+	assert(target.name in TARGET_GENERATORS, "nonexistent generator")
 	gen := TARGET_GENERATORS[target.name]
 
 	// set things up
@@ -29,8 +31,14 @@ gen_code :: proc(tast: t.TAST, target: c.Target) -> string {
 	year, month, day := time.date(time.now())
 	hours, mins, secs := time.clock_from_time(time.now())
 	g.gprintfcln(
-		&gen, "time: %02d-%02d-%04d %02d:%02d:%02d",
-		day, month, year, hours, mins, secs,
+		&gen,
+		"time: %02d-%02d-%04d %02d:%02d:%02d",
+		day,
+		month,
+		year,
+		hours,
+		mins,
+		secs,
 	)
 	g.gprintfcln(&gen, "target: %s", gen.target.name)
 	g.gprintfcln(&gen, "see: https://github.com/SjVer/GLang")

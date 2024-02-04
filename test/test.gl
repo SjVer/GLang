@@ -1,4 +1,4 @@
-target "C"
+target "GLSL-300-es"
 
 builtin type void
 builtin type float
