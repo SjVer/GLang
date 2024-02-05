@@ -18,6 +18,8 @@ GLSL_410_GENERATOR :: g.Generator {
 glsl_410_gen_prelude :: proc(gen: ^g.Generator) {
 	g.gprintln(gen)
 	g.gprintln(gen, "#version 410")
+
+	glsl_gen_float_prec_opt(gen, true)
 }
 
 glsl_410_gen_epilogue :: proc(gen: ^g.Generator) {

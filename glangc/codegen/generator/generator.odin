@@ -8,6 +8,7 @@ import "core:strings"
 Generator :: struct {
 	// filled in dynamically
 	target:       c.Target,
+	options:      map[string]string,
 	builder:      strings.Builder,
 	indent_level: int,
 

@@ -16,12 +16,17 @@ TARGET_GENERATORS: map[string]g.Generator = {
 	c.GLSL_410_TARGET.name    = generators.GLSL_410_GENERATOR,
 }
 
-gen_code :: proc(tast: t.TAST, target: c.Target) -> string {
+gen_code :: proc(
+	tast: t.TAST,
+	target: c.Target,
+	options: map[string]string,
+) -> string {
 	assert(target.name in TARGET_GENERATORS, "nonexistent generator")
 	gen := TARGET_GENERATORS[target.name]
 
 	// set things up
 	gen.target = target
+	gen.options = options
 	gen.builder = strings.builder_make()
 	gen.indent_level = 0
 	gen.indent_str = "    "

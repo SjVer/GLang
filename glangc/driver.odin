@@ -3,6 +3,7 @@ package glangc
 import "core:fmt"
 import "core:log"
 import "core:os"
+import "core:strings"
 import "shared:clodin"
 
 import "codegen"
@@ -16,6 +17,7 @@ input_file := ""
 verbose := false
 output_file: Maybe(string) = nil
 target: Maybe(common.Target) = nil
+target_opts: [dynamic]string = {}
 
 parse_cli :: proc() {
 	clodin.program_name = os.args[0]
@@ -43,9 +45,40 @@ parse_cli :: proc() {
 			"The compilation target\n" + "(derived from source by default)",
 		),
 	)
+	target_opts = clodin.multiple_strings(
+		"opt",
+		"Sets a target-specific option",
+	)
 
 	// finish() exits on failure, so if it doesn't there's no failure
 	if !clodin.finish() do os.exit(0)
+}
+
+parse_cli_target_opts :: proc(target: common.Target) -> map[string]string {
+	opts: map[string]string = {}
+
+	is_valid :: proc(target: common.Target, name: string) -> bool {
+		for opt in target.options {
+			if opt == name do return true
+		}
+		return false
+	}
+
+	for arg in target_opts {
+		parts, _ := strings.split_n(arg, ":", 2)
+		name := parts[0]
+
+		if !is_valid(target, name) {
+			report.error(nil, "invalid target option '%s'", name)
+		} else if name in opts {
+			report.error(nil, "duplicate target option '%s'", name)
+		} else {
+			if len(parts) == 1 do opts[name] = ""
+			else do opts[name] = parts[1]
+		}
+	}
+
+	return opts
 }
 
 check_for_errors :: proc() {
@@ -86,7 +119,10 @@ main :: proc() {
 	}
 
 	// codegen
-	code := codegen.gen_code(tast, the_target)
+	opts := parse_cli_target_opts(the_target)
+	code := codegen.gen_code(tast, the_target, opts)
+
+	check_for_errors()
 
 	log.debugf("output:\n%s", code)
 

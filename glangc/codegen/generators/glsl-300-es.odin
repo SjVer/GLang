@@ -1,5 +1,6 @@
 package glangc_codegen_generators
 
+import "../../report"
 import t "../../typing"
 import g "../generator"
 
@@ -18,10 +19,8 @@ GLSL_300_ES_GENERATOR :: g.Generator {
 glsl_300_es_gen_prelude :: proc(gen: ^g.Generator) {
 	g.gprintln(gen)
 	g.gprintln(gen, "#version 300 es")
-	
-	g.gprintln(gen)
-	g.gprintfcln(gen, "set precision using <TODO>")
-	g.gprintln(gen, "precision mediump float")
+
+	glsl_gen_float_prec_opt(gen, false)
 }
 
 glsl_300_es_gen_epilogue :: proc(gen: ^g.Generator) {
