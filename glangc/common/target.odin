@@ -10,11 +10,11 @@ C_TARGET :: Target {
 	extension = "c",
 }
 GLSL_300_ES_TARGET :: Target {
-	name      = "GLSL-300-es",
+	name      = "GLSL 300 es",
 	extension = "glsl",
 }
 GLSL_410_TARGET :: Target {
-	name      = "GLSL-410",
+	name      = "GLSL 410",
 	extension = "glsl",
 }
 
